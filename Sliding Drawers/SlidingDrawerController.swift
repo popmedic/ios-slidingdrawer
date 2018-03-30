@@ -18,12 +18,15 @@ import UIKit
  */
 
 class SlidingDrawerController: UIViewController {
-    
-    // This is where you set the drawer size (i.e. for 1/3rd use 3.0, for 1/5 use 5.0)
-    var drawerSize:CGFloat = 4.0
+    var drawerSize:CGFloat = 8.0
     var leftViewControllerIdentifier:String = "leftViewController"
     var centerViewControllerIdentifier:String = "centerViewController"
     var rightViewControllerIdentifier:String = "rightViewController"
+    
+    enum Drawers {
+        case left
+        case right
+    }
     
     private var _leftViewController:UIViewController?
     var leftViewController:UIViewController {
@@ -53,27 +56,23 @@ class SlidingDrawerController: UIViewController {
         }
     }
     
-    static let SlidingDrawerNoneOpen = 0
     static let SlidingDrawerOpenLeft = 1
     static let SlidingDrawerOpenRight = 2
-    var openSide:Int {
+    var openSide:SlidingDrawerController.Drawers {
         get{
             return _openSide;
         }
     }
-    private var _openSide:Int = SlidingDrawerNoneOpen
+    private var _openSide = SlidingDrawerController.Drawers.left
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        // Do any additional setup after loading the view.
         
         // Instantiate VC's with storyboard ID's
         self._leftViewController = self.instantiateViewControllers(storyboardID: self.leftViewControllerIdentifier)
         self._centerViewController = self.instantiateViewControllers(storyboardID: self.centerViewControllerIdentifier)
         self._rightViewController = self.instantiateViewControllers(storyboardID: self.rightViewControllerIdentifier)
         
-        // Call configDrawers() and pass the drawerSize variable.
         self.drawDrawers(size: UIScreen.main.bounds.size)
         
         self.view.addSubview(self.leftViewController.view)
@@ -89,11 +88,6 @@ class SlidingDrawerController: UIViewController {
             // This is for after transition has completed.
         })
         
-    }
-    
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
     }
     
     // MARK: - Drawing View
@@ -119,49 +113,46 @@ class SlidingDrawerController: UIViewController {
         swipeLeft.direction = .left
         centerViewController.view.addGestureRecognizer(swipeLeft)
         
-        if(openSide == SlidingDrawerController.SlidingDrawerOpenLeft){
-            openLeftDrawer()
-        } else if openSide == SlidingDrawerController.SlidingDrawerOpenRight {
-            openRightDrawer()
-        }
+        openDrawer(openSide)
     }
     
     // MARK: - Open Drawers
-    
-    func openLeftDrawer() {
-        DispatchQueue.main.async {
-            self._openSide = SlidingDrawerController.SlidingDrawerOpenLeft
-            UIView.animate(withDuration: 0.1, delay: 0, options: UIViewAnimationOptions.curveEaseIn, animations:
-                { () -> Void in
-                    // move views here
-                    self.view.frame = CGRect(x: 0.0, y: 0.0, width: self.view.bounds.width, height: self.view.bounds.height)
-            }, completion:
-                { finished in
-            })
+    func openDrawer(_ side:Drawers) {
+        self._openSide = side
+        var rect:CGRect
+        switch side{
+        case .left:
+            rect = CGRect(
+                x: 0.0,
+                y: 0.0,
+                width: self.view.bounds.width,
+                height: self.view.bounds.height
+            )
+        case .right:
+            rect = CGRect(
+                x: self.view.bounds.origin.x - self.leftViewController.view.bounds.size.width,
+                y: 0.0,
+                width: self.view.bounds.width,
+                height: self.view.bounds.height
+            )
         }
-    }
-    
-    func openRightDrawer() {
-        DispatchQueue.main.async {
-            self._openSide = SlidingDrawerController.SlidingDrawerOpenRight
-            UIView.animate(withDuration: 0.1, delay: 0, options: UIViewAnimationOptions.curveEaseIn, animations:
-                { () -> Void in
-                    // move views here
-                    self.view.frame = CGRect(x: self.view.bounds.origin.x - self.leftViewController.view.bounds.size.width, y: 0.0, width: self.view.bounds.width, height: self.view.bounds.height)
-            }, completion:
-                { finished in
-            })
-        }
+        UIView.animate(withDuration: 0.1, delay: 0, options: UIViewAnimationOptions.curveEaseIn, animations:
+            { () -> Void in
+                // move views here
+                self.view.frame = rect
+        }, completion:
+            { finished in
+        })
     }
     
     // MARK: - Swipe Handling
     
     @objc func swipeRightAction(rec: UISwipeGestureRecognizer){
-        self.openLeftDrawer()
+        self.openDrawer(.left)
     }
     
     @objc func swipeLeftAction(rec:UISwipeGestureRecognizer){
-        self.openRightDrawer()
+        self.openDrawer(.right)
     }
     
     // MARK: - Helpers
